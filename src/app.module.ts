@@ -6,7 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
   imports: [
     MongooseModule.forRoot(
       'mongodb+srv://tuanthanh2603:CVbn12345@vinahome.kntwx.mongodb.net/',
-      { dbName: 'your_database_name' },
+      { dbName: 'vinahome_db_v1' },
     ),
     AccountModule,
   ],
