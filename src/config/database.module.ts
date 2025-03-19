@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
-import { AccountModule } from './modules/account/account.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Account, AccountSchema } from 'src/modules/account/account.schema';
 
 @Module({
   imports: [
     MongooseModule.forRoot(
       'mongodb+srv://tuanthanh2603:CVbn12345@vinahome.kntwx.mongodb.net/',
-      { dbName: 'your_database_name' },
     ),
-    AccountModule,
+    MongooseModule.forFeature([{ name: Account.name, schema: AccountSchema }]),
   ],
+  exports: [MongooseModule],
 })
-export class AppModule {}
+export class DatabaseModule {}
