@@ -39,4 +39,14 @@ export class AccountController {
     }
   }
 
+  @MessagePattern('update_avatar_account')
+  async updateAvatarAccount(@Payload() data: { id: string, url_avatar: string }): Promise<ApiResponse<Account>> {
+    try {
+      const response = await this.accountService.updateAvatarAccount(data.id, data.url_avatar);
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
 }

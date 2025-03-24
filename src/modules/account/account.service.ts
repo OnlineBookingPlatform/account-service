@@ -53,4 +53,19 @@ export class AccountService {
     await account.save();
     return account;
   }
+
+  async updateAvatarAccount(id: string, url_avatar: string): Promise<Account> {
+    console.log('📥 Received request ID:', id);
+    console.log('📥 Received request URL Avatar:', url_avatar);
+    const account = await this.accountModel.findById(id);
+    if (!account) {
+      throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
+    }
+    // account.url_avatar = url_avatar;
+    account.set(url_avatar)
+    await account.save();
+    console.log('✅ Updated account:', account);
+    return account;
+  }
+
 }
