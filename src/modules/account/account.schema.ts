@@ -24,5 +24,13 @@ export class Account extends Document {
   name: string;
   @Prop()
   status: boolean;
+  @Prop()
+  citizen_id: string;
+  @Prop()
+  license_class: string;
+  @Prop()
+  license_expiry_date: Date;
+  @Prop()
+  area: string;
 }
 export const AccountSchema = SchemaFactory.createForClass(Account);
