@@ -1,13 +1,10 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import {
-  DTO_RP_Account,
-  DTO_RQ_Account,
-} from './account.dto';
+import { DTO_RP_Account, DTO_RQ_Account } from './account.dto';
 import * as argon2 from 'argon2';
 import { Account } from './account.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { ApiResponse } from 'src/utils/api-response';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class AccountService {
@@ -15,22 +12,26 @@ export class AccountService {
     @InjectModel(Account.name) private accountModel: Model<Account>,
   ) {}
 
-  async createAccount(data: DTO_RQ_Account) {
+  async createAccount(data: DTO_RQ_Account): Promise<DTO_RP_Account> {
     console.log('📥 Received request:', data);
+
     const hashedPassword = await argon2.hash(data.password);
 
     const newAccount = new this.accountModel({
       ...data,
       password: hashedPassword,
+      account_type: 'BMS',
     });
 
     const savedAccount = await newAccount.save();
     console.log('📝 New Account:', savedAccount);
 
-    return {
-      id: savedAccount._id,
-      ...savedAccount.toObject(),
-    };
+    const response = plainToInstance(DTO_RP_Account, savedAccount.toObject(), {
+      excludeExtraneousValues: true,
+    });
+
+    console.log('🚀 Response DTO:', response);
+    return response;
   }
 
   async getAccountInfo(id: string): Promise<Account> {
@@ -62,10 +63,9 @@ export class AccountService {
       throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
     }
     // account.url_avatar = url_avatar;
-    account.set(url_avatar)
+    account.set(url_avatar);
     await account.save();
     console.log('✅ Updated account:', account);
     return account;
   }
-
 }
