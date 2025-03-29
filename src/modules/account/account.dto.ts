@@ -1,4 +1,4 @@
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDate,
@@ -32,6 +32,10 @@ export class DTO_RQ_Account {
   @IsOptional()
   email?: string;
 
+  @IsString()
+  @IsOptional()
+  note?: string;
+
   @IsDate()
   @IsOptional()
   date_birth?: Date;
@@ -62,61 +66,7 @@ export class DTO_RQ_Account {
   @IsInt()
   company_id: number;
 }
-export class DTO_RP_Account {
-  @Expose()
-  _id: string;
 
-  @Expose()
-  username: string;
-
-  @Expose()
-  status: boolean;
-
-  @Expose()
-  name: string;
-
-  @Expose()
-  phone: string;
-
-  @Expose()
-  email: string;
-
-  @Expose()
-  date_birth: Date;
-
-  @Expose()
-  citizen_id: string;
-
-  @Expose()
-  gender: number;
-
-  @Expose()
-  role: number;
-
-  @Expose()
-  license_class: string;
-
-  @Expose()
-  license_expiry_date: Date;
-
-  @Expose()
-  area: string;
-
-  @Exclude()
-  password?: string;
-
-  @Exclude()
-  account_type?: string;
-
-  @Exclude()
-  createdAt?: Date;
-
-  @Exclude()
-  updatedAt?: Date;
-
-  @Exclude()
-  __v?: number;
-}
 export class DTO_RQ_GoogleLogin {
   accessToken: string;
 }

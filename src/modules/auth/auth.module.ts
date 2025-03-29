@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Account, AccountSchema } from '../account/account.schema';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { RedisService } from 'src/config/redis.service';
 
 @Module({
   imports: [
@@ -11,6 +12,6 @@ import { AuthService } from './auth.service';
     MongooseModule.forFeature([{ name: Account.name, schema: AccountSchema }]),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, RedisService],
 })
 export class AuthModule {}

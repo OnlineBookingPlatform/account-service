@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 @Schema({ collection: 'tbl_accounts', timestamps: true })
 export class Account extends Document {
   @Prop()
@@ -32,5 +32,9 @@ export class Account extends Document {
   license_expiry_date: Date;
   @Prop()
   area: string;
+  @Prop()
+  company_id: number;
+  @Prop()
+  note: string;
 }
 export const AccountSchema = SchemaFactory.createForClass(Account);
