@@ -7,6 +7,8 @@ export class DTO_RQ_GoogleLogin {
     email: string;
     url_avatar: string;
     account_type: string;
+    gender: number;
+    phone: string;
     token: string;
     role: number;
   }

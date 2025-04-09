@@ -91,6 +91,8 @@ export class AuthService {
       account_type: account.account_type,
       token: accessToken,
       role: account.role,
+      gender: account.gender,
+      phone: account.phone,
     };
   }
 
