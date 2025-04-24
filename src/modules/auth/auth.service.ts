@@ -99,30 +99,44 @@ export class AuthService {
   }
 
   async bmsLogin(data: DTO_RQ_BMSLogin): Promise<DTO_RP_BMSLogin> {
-    console.log('📥 Received request:', data); 
+    console.log('📥 Received request:', data);
     const user = await this.accountModel.findOne({ username: data.username });
     const isPasswordValid = await argon2.verify(user.password, data.password);
 
     if (!user) {
-      throw new HttpException('Tài khoản không tồn tại', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Tài khoản không tồn tại',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     if (!isPasswordValid) {
-      throw new HttpException('Mật khẩu không chính xác', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Mật khẩu không chính xác',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     if (!user.status) {
       throw new HttpException('Tài khoản đã bị khóa', HttpStatus.UNAUTHORIZED);
     }
     // Role 4: Nhân viên // Role 5: Quản trị viên
-    if(user.role !== 4 && user.role !== 5) {
-      throw new HttpException('Tài khoản không có quyền hợp lệ', HttpStatus.UNAUTHORIZED);
+    if (user.role !== 4 && user.role !== 5) {
+      throw new HttpException(
+        'Tài khoản không có quyền hợp lệ',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
-    const companyDataString  = await this.redisService.get(`company:${user.company_id}`);
-    console.log('Data from Redis:', companyDataString );
+    const companyDataString = await this.redisService.get(
+      `company:${user.company_id}`,
+    );
+    console.log('Data from Redis:', companyDataString);
     const companyData = JSON.parse(companyDataString);
     console.log('Company Code:', companyData);
     if (!companyDataString) {
-      throw new HttpException('Không tìm thấy dữ liệu công ty', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Không tìm thấy dữ liệu công ty',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
     if (!companyData.status) {
       throw new HttpException('Công ty đã bị khóa', HttpStatus.FORBIDDEN);
@@ -144,16 +158,19 @@ export class AuthService {
     };
   }
 
-  async facebookLogin(data: DTO_RQ_FacebookLogin): Promise<DTO_RP_FacebookLogin> {
+  async facebookLogin(
+    data: DTO_RQ_FacebookLogin,
+  ): Promise<DTO_RP_FacebookLogin> {
     console.log('📥 Received request:', data);
-    
+
     // Facebook app credentials - should be in environment variables
     const clientId = process.env.FACEBOOK_APP_ID || 'YOUR_FACEBOOK_APP_ID';
-    const clientSecret = process.env.FACEBOOK_APP_SECRET || 'YOUR_FACEBOOK_APP_SECRET';
-    
+    const clientSecret =
+      process.env.FACEBOOK_APP_SECRET || 'YOUR_FACEBOOK_APP_SECRET';
+
     try {
       let accessToken: string;
-      
+
       // Handle two authentication flows: authorization code flow or access token flow
       if (data.accessToken) {
         // Access token flow - client already has token
@@ -161,59 +178,59 @@ export class AuthService {
       } else if (data.code && data.redirectUri) {
         // Authorization code flow - exchange code for token
         const tokenResponse = await fetch(
-          `https://graph.facebook.com/v22.0/oauth/access_token?` + 
-          `client_id=${clientId}&` +
-          `client_secret=${clientSecret}&` + 
-          `code=${data.code}&` + 
-          `redirect_uri=${encodeURIComponent(data.redirectUri)}`,
+          `https://graph.facebook.com/v22.0/oauth/access_token?` +
+            `client_id=${clientId}&` +
+            `client_secret=${clientSecret}&` +
+            `code=${data.code}&` +
+            `redirect_uri=${encodeURIComponent(data.redirectUri)}`,
           {
             method: 'GET',
-          }
+          },
         );
-        
+
         if (!tokenResponse.ok) {
           const errorData = await tokenResponse.json();
           console.error('Facebook token exchange error:', errorData);
           throw new HttpException(
             'Facebook OAuth Error: Failed to exchange code for token',
-            HttpStatus.UNAUTHORIZED
+            HttpStatus.UNAUTHORIZED,
           );
         }
-        
+
         const tokenData = await tokenResponse.json();
         accessToken = tokenData.access_token;
       } else {
         throw new HttpException(
           'Invalid authentication data: either code+redirectUri or accessToken is required',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
-      
+
       // Get user profile with the access token
       const profileResponse = await fetch(
         `https://graph.facebook.com/v19.0/me?fields=id,name,email,picture.type(large),gender&access_token=${accessToken}`,
         {
           method: 'GET',
-        }
+        },
       );
-      
+
       if (!profileResponse.ok) {
         const errorData = await profileResponse.json();
         console.error('Facebook profile error:', errorData);
         throw new HttpException(
           'Facebook API Error: Failed to fetch user profile',
-          HttpStatus.INTERNAL_SERVER_ERROR
+          HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
-      
+
       const userData = await profileResponse.json();
       console.log('📤 Response from Facebook:', userData);
-      
+
       // Ensure we have an email address
       if (!userData.email) {
         throw new HttpException(
           'Email not provided by Facebook or permission not granted',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -222,7 +239,7 @@ export class AuthService {
         email: userData.email,
         account_type: 'FACEBOOK',
       });
-      
+
       if (!account) {
         account = new this.accountModel({
           name: userData.name,
@@ -230,7 +247,12 @@ export class AuthService {
           url_avatar: userData.picture?.data?.url,
           account_type: 'FACEBOOK',
           role: 1, // Default role for Customer
-          gender: userData.gender === 'male' ? 1 : (userData.gender === 'female' ? 2 : 0),
+          gender:
+            userData.gender === 'male'
+              ? 1
+              : userData.gender === 'female'
+                ? 2
+                : 0,
         });
         await account.save();
       }
@@ -260,7 +282,7 @@ export class AuthService {
       }
       throw new HttpException(
         'Facebook authentication failed: ' + (error.message || 'Unknown error'),
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
