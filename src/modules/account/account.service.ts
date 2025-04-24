@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { DTO_RQ_Account } from './account.dto';
 import * as argon2 from 'argon2';
@@ -9,28 +10,70 @@ import { InjectModel } from '@nestjs/mongoose';
 export class AccountService {
   constructor(
     @InjectModel(Account.name) private accountModel: Model<Account>,
-  ) {}
+  ) { }
 
   async createAccount(data: DTO_RQ_Account): Promise<Account> {
-    console.log('📥 Received request:', data);
-    const existingAccount = await this.accountModel.findOne({ username: data.username });
-    if (existingAccount) {
-      throw new HttpException('Tên tài khoản đã tồn tại', HttpStatus.BAD_REQUEST);
-    }
-    const hashedPassword = await argon2.hash(data.password);
-
-    const newAccount = new this.accountModel({
-      ...data,
-      password: hashedPassword,
-      account_type: 'BMS',
+    // Log request (ẩn thông tin nhạy cảm)
+    console.log('📥 Received request:', { 
+        ...data, 
+        password: '***',
+        _id: data._id || 'auto-generated' 
     });
 
-    const savedAccount = await newAccount.save();
-    console.log('📝 New Account:', savedAccount);
+    try {
+        // 1. Kiểm tra username đã tồn tại chưa
+        const existingAccount = await this.accountModel.findOne({ username: data.username }).lean();
+        if (existingAccount) {
+            throw new HttpException('Tên tài khoản đã tồn tại', HttpStatus.BAD_REQUEST);
+        }
 
-    return savedAccount.toObject() as Account;
-  }
+        // 2. Hash password
+        const hashedPassword = await argon2.hash(data.password);
 
+        // 3. Chuẩn bị dữ liệu tài khoản mới (loại bỏ _id nếu có)
+        const accountData = {
+            ...data,
+            password: hashedPassword,
+            account_type: 'BMS',
+            _id: undefined // Đảm bảo MongoDB sẽ tự sinh ID
+        };
+        delete accountData._id; // Xóa trường _id nếu tồn tại
+
+        // 4. Tạo và lưu tài khoản mới
+        const newAccount = new this.accountModel(accountData);
+        const savedAccount = await newAccount.save();
+
+        // 5. Log kết quả (không bao gồm thông tin nhạy cảm)
+        console.log('✅ Account created successfully:', {
+            _id: savedAccount._id,
+            username: savedAccount.username,
+            account_type: savedAccount.account_type
+        });
+
+        // 6. Trả về thông tin tài khoản (đã convert thành plain object)
+        return savedAccount.toObject() as Account;
+
+    } catch (error) {
+        console.error('❌ Account creation failed:', error);
+
+        // Xử lý các loại lỗi khác nhau
+        if (error instanceof HttpException) {
+            throw error; // Giữ nguyên các lỗi đã được xử lý
+        }
+
+        if (error.name === 'ValidationError') {
+            throw new HttpException(
+                'Dữ liệu tài khoản không hợp lệ: ' + error.message,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        throw new HttpException(
+            'Lỗi hệ thống khi tạo tài khoản',
+            HttpStatus.INTERNAL_SERVER_ERROR
+        );
+    }
+}
   async getAccountInfo(id: string): Promise<Account> {
     console.log('📥 Received request:', id);
     const account = await this.accountModel.findById(id);

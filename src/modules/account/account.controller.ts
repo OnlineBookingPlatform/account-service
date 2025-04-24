@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Controller, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';

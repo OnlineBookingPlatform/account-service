@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Module, OnModuleInit } from '@nestjs/common';
 import { AccountModule } from './modules/account/account.module';
 import { MongooseModule } from '@nestjs/mongoose';
