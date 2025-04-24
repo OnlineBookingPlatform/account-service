@@ -15,11 +15,13 @@ import { AuthModule } from './modules/auth/auth.module';
 })
 export class AppModule implements OnModuleInit {
   async onModuleInit() {
-    const state = mongoose.connection.readyState;
-    if (state === 1) {
+    try {
+      await mongoose.connect(
+        'mongodb+srv://tuanthanh2603:CVbn12345@vinahome.kntwx.mongodb.net/vinahome_db_v1'
+      );
       console.log('✅ Kết nối MongoDB thành công!');
-    } else {
-      console.error('❌ Kết nối MongoDB thất bại!');
+    } catch (error) {
+      console.error('❌ Kết nối MongoDB thất bại!', error);
     }
   }
 }
