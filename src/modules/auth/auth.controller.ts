@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { DTO_RP_BMSLogin, DTO_RP_GoogleLogin, DTO_RQ_BMSLogin, DTO_RQ_GoogleLogin } from './auth.dto';
+import { DTO_RP_BMSLogin, DTO_RP_FacebookLogin, DTO_RP_GoogleLogin, DTO_RQ_BMSLogin, DTO_RQ_FacebookLogin, DTO_RQ_GoogleLogin } from './auth.dto';
 import { ApiResponse } from 'src/utils/api-response';
 import { handleError } from 'src/utils/error-handler';
 import { AuthService } from './auth.service';
@@ -15,6 +15,18 @@ export class AuthController {
   ): Promise<ApiResponse<DTO_RP_GoogleLogin>> {
     try {
       const response = await this.authService.googleLogin(data);
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  @MessagePattern('facebook_login')
+  async facebookLogin(
+    @Payload() data: DTO_RQ_FacebookLogin,
+  ): Promise<ApiResponse<DTO_RP_FacebookLogin>> {
+    try {
+      const response = await this.authService.facebookLogin(data);
       return ApiResponse.success(response);
     } catch (error) {
       return handleError(error);

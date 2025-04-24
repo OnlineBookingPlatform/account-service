@@ -6,8 +6,10 @@ import * as argon2 from 'argon2';
 import { Model } from 'mongoose';
 import {
   DTO_RP_BMSLogin,
+  DTO_RP_FacebookLogin,
   DTO_RP_GoogleLogin,
   DTO_RQ_BMSLogin,
+  DTO_RQ_FacebookLogin,
   DTO_RQ_GoogleLogin,
 } from './auth.dto';
 import { RedisService } from 'src/config/redis.service';
@@ -140,5 +142,126 @@ export class AuthService {
       token: accessToken,
       role: user.role,
     };
+  }
+
+  async facebookLogin(data: DTO_RQ_FacebookLogin): Promise<DTO_RP_FacebookLogin> {
+    console.log('📥 Received request:', data);
+    
+    // Facebook app credentials - should be in environment variables
+    const clientId = process.env.FACEBOOK_APP_ID || 'YOUR_FACEBOOK_APP_ID';
+    const clientSecret = process.env.FACEBOOK_APP_SECRET || 'YOUR_FACEBOOK_APP_SECRET';
+    
+    try {
+      let accessToken: string;
+      
+      // Handle two authentication flows: authorization code flow or access token flow
+      if (data.accessToken) {
+        // Access token flow - client already has token
+        accessToken = data.accessToken;
+      } else if (data.code && data.redirectUri) {
+        // Authorization code flow - exchange code for token
+        const tokenResponse = await fetch(
+          `https://graph.facebook.com/v22.0/oauth/access_token?` + 
+          `client_id=${clientId}&` +
+          `client_secret=${clientSecret}&` + 
+          `code=${data.code}&` + 
+          `redirect_uri=${encodeURIComponent(data.redirectUri)}`,
+          {
+            method: 'GET',
+          }
+        );
+        
+        if (!tokenResponse.ok) {
+          const errorData = await tokenResponse.json();
+          console.error('Facebook token exchange error:', errorData);
+          throw new HttpException(
+            'Facebook OAuth Error: Failed to exchange code for token',
+            HttpStatus.UNAUTHORIZED
+          );
+        }
+        
+        const tokenData = await tokenResponse.json();
+        accessToken = tokenData.access_token;
+      } else {
+        throw new HttpException(
+          'Invalid authentication data: either code+redirectUri or accessToken is required',
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      
+      // Get user profile with the access token
+      const profileResponse = await fetch(
+        `https://graph.facebook.com/v19.0/me?fields=id,name,email,picture.type(large),gender&access_token=${accessToken}`,
+        {
+          method: 'GET',
+        }
+      );
+      
+      if (!profileResponse.ok) {
+        const errorData = await profileResponse.json();
+        console.error('Facebook profile error:', errorData);
+        throw new HttpException(
+          'Facebook API Error: Failed to fetch user profile',
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
+      
+      const userData = await profileResponse.json();
+      console.log('📤 Response from Facebook:', userData);
+      
+      // Ensure we have an email address
+      if (!userData.email) {
+        throw new HttpException(
+          'Email not provided by Facebook or permission not granted',
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
+      // Find or create user account
+      let account = await this.accountModel.findOne({
+        email: userData.email,
+        account_type: 'FACEBOOK',
+      });
+      
+      if (!account) {
+        account = new this.accountModel({
+          name: userData.name,
+          email: userData.email,
+          url_avatar: userData.picture?.data?.url,
+          account_type: 'FACEBOOK',
+          role: 1, // Default role for Customer
+          gender: userData.gender === 'male' ? 1 : (userData.gender === 'female' ? 2 : 0),
+        });
+        await account.save();
+      }
+
+      // Generate JWT token
+      const { accessToken: jwtToken } = await this.signJwtToken(
+        account._id.toString(),
+        account.account_type,
+        account.role,
+      );
+
+      return {
+        id: account._id.toString(),
+        name: account.name,
+        email: account.email,
+        url_avatar: account.url_avatar,
+        account_type: account.account_type,
+        token: jwtToken,
+        role: account.role,
+        gender: account.gender,
+        phone: account.phone,
+      };
+    } catch (error) {
+      console.error('Facebook login error:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Facebook authentication failed: ' + (error.message || 'Unknown error'),
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }
