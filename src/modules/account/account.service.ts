@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { DTO_RQ_Account } from './account.dto';
+import { DTO_RP_SuperAdmin, DTO_RQ_Account, DTO_RQ_SuperAdmin, DTO_RQ_UpdateSuperAdmin } from './account.dto';
 import * as argon2 from 'argon2';
 import { Account } from './account.schema';
 import { Model } from 'mongoose';
@@ -14,66 +14,66 @@ export class AccountService {
 
   async createAccount(data: DTO_RQ_Account): Promise<Account> {
     // Log request (ẩn thông tin nhạy cảm)
-    console.log('📥 Received request:', { 
-        ...data, 
-        password: '***',
-        _id: data._id || 'auto-generated' 
+    console.log('📥 Received request:', {
+      ...data,
+      password: '***',
+      _id: data._id || 'auto-generated'
     });
 
     try {
-        // 1. Kiểm tra username đã tồn tại chưa
-        const existingAccount = await this.accountModel.findOne({ username: data.username }).lean();
-        if (existingAccount) {
-            throw new HttpException('Tên tài khoản đã tồn tại', HttpStatus.BAD_REQUEST);
-        }
+      // 1. Kiểm tra username đã tồn tại chưa
+      const existingAccount = await this.accountModel.findOne({ username: data.username }).lean();
+      if (existingAccount) {
+        throw new HttpException('Tên tài khoản đã tồn tại', HttpStatus.BAD_REQUEST);
+      }
 
-        // 2. Hash password
-        const hashedPassword = await argon2.hash(data.password);
+      // 2. Hash password
+      const hashedPassword = await argon2.hash(data.password);
 
-        // 3. Chuẩn bị dữ liệu tài khoản mới (loại bỏ _id nếu có)
-        const accountData = {
-            ...data,
-            password: hashedPassword,
-            account_type: 'BMS',
-            _id: undefined // Đảm bảo MongoDB sẽ tự sinh ID
-        };
-        delete accountData._id; // Xóa trường _id nếu tồn tại
+      // 3. Chuẩn bị dữ liệu tài khoản mới (loại bỏ _id nếu có)
+      const accountData = {
+        ...data,
+        password: hashedPassword,
+        account_type: 'BMS',
+        _id: undefined // Đảm bảo MongoDB sẽ tự sinh ID
+      };
+      delete accountData._id; // Xóa trường _id nếu tồn tại
 
-        // 4. Tạo và lưu tài khoản mới
-        const newAccount = new this.accountModel(accountData);
-        const savedAccount = await newAccount.save();
+      // 4. Tạo và lưu tài khoản mới
+      const newAccount = new this.accountModel(accountData);
+      const savedAccount = await newAccount.save();
 
-        // 5. Log kết quả (không bao gồm thông tin nhạy cảm)
-        console.log('✅ Account created successfully:', {
-            _id: savedAccount._id,
-            username: savedAccount.username,
-            account_type: savedAccount.account_type
-        });
+      // 5. Log kết quả (không bao gồm thông tin nhạy cảm)
+      console.log('✅ Account created successfully:', {
+        _id: savedAccount._id,
+        username: savedAccount.username,
+        account_type: savedAccount.account_type
+      });
 
-        // 6. Trả về thông tin tài khoản (đã convert thành plain object)
-        return savedAccount.toObject() as Account;
+      // 6. Trả về thông tin tài khoản (đã convert thành plain object)
+      return savedAccount.toObject() as Account;
 
     } catch (error) {
-        console.error('❌ Account creation failed:', error);
+      console.error('❌ Account creation failed:', error);
 
-        // Xử lý các loại lỗi khác nhau
-        if (error instanceof HttpException) {
-            throw error; // Giữ nguyên các lỗi đã được xử lý
-        }
+      // Xử lý các loại lỗi khác nhau
+      if (error instanceof HttpException) {
+        throw error; // Giữ nguyên các lỗi đã được xử lý
+      }
 
-        if (error.name === 'ValidationError') {
-            throw new HttpException(
-                'Dữ liệu tài khoản không hợp lệ: ' + error.message,
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
+      if (error.name === 'ValidationError') {
         throw new HttpException(
-            'Lỗi hệ thống khi tạo tài khoản',
-            HttpStatus.INTERNAL_SERVER_ERROR
+          'Dữ liệu tài khoản không hợp lệ: ' + error.message,
+          HttpStatus.BAD_REQUEST
         );
+      }
+
+      throw new HttpException(
+        'Lỗi hệ thống khi tạo tài khoản',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
-}
+  }
   async getAccountInfo(id: string): Promise<Account> {
     console.log('📥 Received request:', id);
     const account = await this.accountModel.findById(id);
@@ -122,4 +122,93 @@ export class AccountService {
     }
     await account.deleteOne();
   }
+
+  async createSuperAdminAccount(data: DTO_RQ_SuperAdmin): Promise<DTO_RP_SuperAdmin> {
+    console.log('📥 Received request:', data);
+    try {
+      // 1. Kiểm tra username đã tồn tại chưa
+      const existingAccount = await this.accountModel.findOne({
+        username: data.username,
+        account_type: 'SUPERADMIN'
+      }).lean();
+      if (existingAccount) {
+        throw new HttpException('Tên tài khoản đã tồn tại', HttpStatus.BAD_REQUEST);
+      }
+      // 2. Hash password
+      const hashedPassword = await argon2.hash(data.password);
+      // 3. Tạo tài khoản mới
+      const newAccount = new this.accountModel({
+        ...data,
+        password: hashedPassword,
+        account_type: 'SUPERADMIN',
+      });
+      const savedAccount = await newAccount.save();
+      // 4. Trả về thông tin tài khoản
+      return {
+        id: savedAccount.id,
+        username: savedAccount.username,
+        name: savedAccount.name,
+        account_type: savedAccount.account_type,
+      };
+    } catch (error) {
+      console.error('❌ Account creation failed:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error.name === 'ValidationError') {
+        throw new HttpException(
+          'Dữ liệu tài khoản không hợp lệ: ' + error.message,
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      throw new HttpException(
+        'Lỗi hệ thống khi tạo tài khoản',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async getListSuperAdminAccount(): Promise<DTO_RP_SuperAdmin[]> {
+    const accounts = await this.accountModel.find({ account_type: 'SUPERADMIN' });
+    return accounts.map(account => ({
+      id: account.id,
+      username: account.username,
+      name: account.name,
+      account_type: account.account_type,
+    }));
+  }
+
+  async deleteSuperAdminAccount(id: string): Promise<void> {
+    console.log('📥 Received request:', id);
+    const account = await this.accountModel.findById(id);
+    if (!account) {
+      throw new HttpException('Tài khoản không tồn tại', HttpStatus.NOT_FOUND);
+    }
+    await account.deleteOne();
+  }
+
+  async updateSuperAdminAccount(id: string, data: DTO_RQ_UpdateSuperAdmin): Promise<DTO_RP_SuperAdmin> {
+    console.log('📥 Received request ID:', id);
+    console.log('📥 Received request Data:', data);
+
+    const account = await this.accountModel.findById(id);
+    if (!account) {
+      throw new HttpException('Tài khoản không tồn tại', HttpStatus.NOT_FOUND);
+    }
+
+    // Chỉ cập nhật các trường được phép
+    account.name = data.name;
+    account.username = data.username;
+
+    await account.save();
+
+    return {
+      id: account.id,
+      username: account.username,
+      name: account.name,
+      account_type: account.account_type,
+    };
+  }
+
+
 }

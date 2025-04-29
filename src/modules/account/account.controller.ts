@@ -2,7 +2,7 @@
 import { Controller, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import {  DTO_RQ_Account } from './account.dto';
+import {  DTO_RP_SuperAdmin, DTO_RQ_Account, DTO_RQ_SuperAdmin, DTO_RQ_UpdateSuperAdmin } from './account.dto';
 import { ApiResponse } from 'src/utils/api-response';
 import { handleError } from 'src/utils/error-handler';
 import { Account } from './account.schema';
@@ -88,6 +88,59 @@ export class AccountController {
   ): Promise<ApiResponse<void>> {
     try {
       const response = await this.accountService.deleteAccount(data.id);
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  // Tạo tài khoản super admin
+  @MessagePattern('create_super_admin_account')
+  async createSuperAdminAccount(
+    @Payload() data: DTO_RQ_SuperAdmin,
+  ): Promise<ApiResponse<DTO_RP_SuperAdmin>> {
+    try {
+      const response = await this.accountService.createSuperAdminAccount(data);
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  // Lấy danh sách tài khoản super admin
+  @MessagePattern('get_list_super_admin_account')
+  async getListSuperAdminAccount(): Promise<ApiResponse<DTO_RP_SuperAdmin[]>> {
+    try {
+      const response = await this.accountService.getListSuperAdminAccount();
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  // Xoá tài khoản Super Admin
+  @MessagePattern('delete_super_admin_account')
+  async deleteSuperAdminAccount(
+    @Payload() data: { id: string },
+  ): Promise<ApiResponse<void>> {
+    try {
+      const response = await this.accountService.deleteSuperAdminAccount(data.id);
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  // Cập nhât tài khoản Super Admin
+  @MessagePattern('update_super_admin_account')
+  async updateSuperAdminAccount(
+    @Payload() data: { id: string; data: DTO_RQ_UpdateSuperAdmin },
+  ): Promise<ApiResponse<DTO_RP_SuperAdmin>> {
+    try {
+      const response = await this.accountService.updateSuperAdminAccount(
+        data.id,
+        data.data,
+      );
       return ApiResponse.success(response);
     } catch (error) {
       return handleError(error);

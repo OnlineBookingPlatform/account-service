@@ -78,3 +78,22 @@ export class DTO_RP_AccountInfo {
   token: string;
   role: number;
 }
+
+export class DTO_RQ_SuperAdmin {
+  username: string;
+  password: string;
+  name: string;
+}
+
+export class DTO_RP_SuperAdmin {
+  id: string;
+  name: string;
+  username: string;
+  account_type: string;
+}
+
+export class DTO_RQ_UpdateSuperAdmin {
+  id: string;
+  name: string;
+  username: string;
+}
