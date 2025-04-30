@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { News } from './news.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { DTO_RQ_ReceiveNews } from './news.dto';
+import { DTO_RP_ReceiveNews, DTO_RQ_ReceiveNews } from './news.dto';
 
 @Injectable()
 export class NewsService {
@@ -19,5 +19,13 @@ export class NewsService {
     }
     const news = new this.newsModel({ email });
     await news.save();
+  }
+  async getListReceiveNews(): Promise<DTO_RP_ReceiveNews[]> {
+    const newsList = await this.newsModel.find().sort({ createdAt: -1 });
+    return newsList.map((news) => ({
+      id: news._id.toString(),
+      email: news.email,
+      createdAt: news.createdAt.toString(),
+    }));
   }
 }
