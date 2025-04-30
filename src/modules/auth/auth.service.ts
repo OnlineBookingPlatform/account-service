@@ -8,9 +8,11 @@ import {
   DTO_RP_BMSLogin,
   DTO_RP_FacebookLogin,
   DTO_RP_GoogleLogin,
+  DTO_RP_SuperAdminLogin,
   DTO_RQ_BMSLogin,
   DTO_RQ_FacebookLogin,
   DTO_RQ_GoogleLogin,
+  DTO_RQ_SuperAdminLogin,
 } from './auth.dto';
 import { RedisService } from 'src/config/redis.service';
 
@@ -285,5 +287,46 @@ export class AuthService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async superAdminLogin(
+    data: DTO_RQ_SuperAdminLogin,
+  ): Promise<DTO_RP_SuperAdminLogin> {
+    console.log('📥 Received request:', data);
+    const user = await this.accountModel.findOne({
+      username: data.username,
+      account_type: 'SUPERADMIN',
+    });
+    if (!user) {
+      throw new HttpException(
+        'Tài khoản không tồn tại',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const isPasswordValid = await argon2.verify(user.password, data.password);
+    if (!isPasswordValid) {
+      throw new HttpException(
+        'Mật khẩu không chính xác',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    if (user.account_type !== 'SUPERADMIN' && user.role !== 99) {
+      throw new HttpException(
+        'Tài khoản không có quyền hợp lệ',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const { accessToken } = await this.signJwtToken(
+      user._id.toString(),
+      user.account_type,
+      user.role,
+    );
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      username: user.username,
+      token: accessToken,
+      account_type: user.account_type,
+    };
   }
 }

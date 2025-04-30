@@ -141,6 +141,7 @@ export class AccountService {
         ...data,
         password: hashedPassword,
         account_type: 'SUPERADMIN',
+        role: 99,
       });
       const savedAccount = await newAccount.save();
       // 4. Trả về thông tin tài khoản
