@@ -4,6 +4,7 @@ import { AccountModule } from './modules/account/account.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { AuthModule } from './modules/auth/auth.module';
+import { NewsModule } from './modules/news/news.module';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { AuthModule } from './modules/auth/auth.module';
       'mongodb+srv://tuanthanh2603:CVbn12345@vinahome.kntwx.mongodb.net/',
       { dbName: 'vinahome_db_v1' },
     ),
-    AccountModule, AuthModule
+    AccountModule, AuthModule, NewsModule,
   ],
 })
 export class AppModule implements OnModuleInit {
