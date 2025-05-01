@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { DTO_RP_SuperAdmin, DTO_RQ_Account, DTO_RQ_SuperAdmin, DTO_RQ_UpdateSuperAdmin } from './account.dto';
+import { DTO_RP_AccountByCompanyBus, DTO_RP_SuperAdmin, DTO_RQ_Account, DTO_RQ_AccountByCompanyBus, DTO_RQ_SuperAdmin, DTO_RQ_UpdateSuperAdmin } from './account.dto';
 import * as argon2 from 'argon2';
 import { Account } from './account.schema';
 import { Model } from 'mongoose';
@@ -132,7 +132,7 @@ export class AccountService {
         account_type: 'SUPERADMIN'
       }).lean();
       if (existingAccount) {
-        throw new HttpException('Tên tài khoản đã tồn tại', HttpStatus.BAD_REQUEST);
+        throw new HttpException('Tài khoản đã tồn tại', HttpStatus.BAD_REQUEST);
       }
       // 2. Hash password
       const hashedPassword = await argon2.hash(data.password);
@@ -209,6 +209,97 @@ export class AccountService {
       name: account.name,
       account_type: account.account_type,
     };
+  }
+
+  async createAccountBySuperAdmin(data: DTO_RQ_AccountByCompanyBus): Promise<DTO_RP_AccountByCompanyBus> {
+    console.log('📥 Received request:', data);
+    try {
+      const existingAccount = await this.accountModel.findOne({
+        username: data.username,
+        account_type: 'BMS'
+      }).lean();
+      if (existingAccount) {
+        throw new HttpException('Tài khoản đã tồn tại', HttpStatus.BAD_REQUEST);
+      }
+      const hashedPassword = await argon2.hash(data.password);
+      const newAccount = new this.accountModel({
+        ...data,
+        password: hashedPassword,
+        account_type: 'BMS',
+      });
+      const savedAccount = await newAccount.save();
+      return {
+        id: savedAccount.id,
+        username: savedAccount.username,
+        name: savedAccount.name,
+        phone: savedAccount.phone,
+        email: savedAccount.email,
+        role: savedAccount.role,
+        status: savedAccount.status,
+        gender: savedAccount.gender,
+        company_id: savedAccount.company_id,
+      }
+    } catch (error) {
+      throw new HttpException(
+        'Lỗi hệ thống khi tạo tài khoản',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  async getListAccountByCompanyOnPlatform(id: number): Promise<DTO_RP_AccountByCompanyBus[]> {
+    console.log('📥 Received request:', id);
+    const accounts = await this.accountModel.find({ company_id: id, account_type: 'BMS' });
+    return accounts.map(account => ({
+      id: account.id,
+      username: account.username,
+      name: account.name,
+      phone: account.phone,
+      email: account.email,
+      role: account.role,
+      gender: account.gender,
+      company_id: account.company_id,
+      status: account.status,
+    }));
+  }
+  async deleteAccountBySuperAdmin(id: string): Promise<void> {
+    console.log('📥 Received request:', id);
+    const account = await this.accountModel.findById(id);
+    if (!account) {
+      throw new HttpException('Tài khoản không tồn tại', HttpStatus.NOT_FOUND); 
+    }
+    await account.deleteOne();
+  }
+  
+  async updateAccountBySuperAdmin(id: string, data: DTO_RQ_AccountByCompanyBus): Promise<DTO_RP_AccountByCompanyBus> {
+    console.log('📥 Received request ID:', id);
+    console.log('📥 Received request Data:', data);
+
+    const account = await this.accountModel.findById(id);
+    if (!account) {
+      throw new HttpException('Tài khoản không tồn tại', HttpStatus.NOT_FOUND);
+    }
+
+    account.name = data.name;
+    account.username = data.username;
+    account.phone = data.phone;
+    account.email = data.email;
+    account.role = data.role;
+    account.status = data.status;
+    account.gender = data.gender;
+
+    await account.save();
+    return {
+      id: account.id,
+      username: account.username,
+      name: account.name,
+      phone: account.phone,
+      email: account.email,
+      role: account.role,
+      status: account.status,
+      gender: account.gender,
+      company_id: account.company_id,
+    }
   }
 
 

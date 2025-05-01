@@ -17,9 +17,9 @@ export class Account extends Document {
   @Prop()
   email: string;
   @Prop()
-  role: number;
+  role: number; // 1: Customer (GOOGLE, FACEBOOK), 2: Phụ xe, 3: Tài xế, 4: Nhân viên, 5: Admin Bus Company, 99: Super Admin
   @Prop()
-  account_type: string;
+  account_type: string; // GOOGLE, FACEBOOK, SUPERADMIN, BMS
   @Prop()
   name: string;
   @Prop()

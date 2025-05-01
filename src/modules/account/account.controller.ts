@@ -2,7 +2,7 @@
 import { Controller, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import {  DTO_RP_SuperAdmin, DTO_RQ_Account, DTO_RQ_SuperAdmin, DTO_RQ_UpdateSuperAdmin } from './account.dto';
+import {  DTO_RP_AccountByCompanyBus, DTO_RP_SuperAdmin, DTO_RQ_Account, DTO_RQ_AccountByCompanyBus, DTO_RQ_SuperAdmin, DTO_RQ_UpdateSuperAdmin } from './account.dto';
 import { ApiResponse } from 'src/utils/api-response';
 import { handleError } from 'src/utils/error-handler';
 import { Account } from './account.schema';
@@ -138,6 +138,57 @@ export class AccountController {
   ): Promise<ApiResponse<DTO_RP_SuperAdmin>> {
     try {
       const response = await this.accountService.updateSuperAdminAccount(
+        data.id,
+        data.data,
+      );
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  @MessagePattern('create_account_by_super_admin')
+  async createAccountBySuperAdmin(
+    @Payload() data: DTO_RQ_AccountByCompanyBus,
+  ): Promise<ApiResponse<DTO_RP_AccountByCompanyBus>> {
+    try {
+      const response = await this.accountService.createAccountBySuperAdmin(data);
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  @MessagePattern('get_list_account_by_company_on_platform')
+  async getListAccountByCompanyOnPlatform(
+    @Payload() data: { id: number },
+  ): Promise<ApiResponse<DTO_RP_AccountByCompanyBus[]>> {
+    try {
+      const response = await this.accountService.getListAccountByCompanyOnPlatform(data.id);
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  @MessagePattern('delete_account_by_super_admin')
+  async deleteAccountBySuperAdmin(
+    @Payload() data: { id: string },
+  ): Promise<ApiResponse<void>> {
+    try {
+      const response = await this.accountService.deleteAccountBySuperAdmin(data.id);
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  @MessagePattern('update_account_by_super_admin')
+  async updateAccountBySuperAdmin(
+    @Payload() data: { id: string; data: DTO_RQ_AccountByCompanyBus },
+  ): Promise<ApiResponse<DTO_RP_AccountByCompanyBus>> {
+    try {
+      const response = await this.accountService.updateAccountBySuperAdmin(
         data.id,
         data.data,
       );

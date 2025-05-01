@@ -97,3 +97,27 @@ export class DTO_RQ_UpdateSuperAdmin {
   name: string;
   username: string;
 }
+
+export class DTO_RQ_AccountByCompanyBus {
+  id: string;
+  name: string;
+  username: string;
+  password: string;
+  phone: string;
+  gender: number;
+  role: number;
+  email: string;
+  status: boolean;
+  company_id: number;
+}
+export class DTO_RP_AccountByCompanyBus {
+  id: string;
+  name: string;
+  username: string;
+  phone: string;
+  gender: number;
+  role: number;
+  email: string;
+  status: boolean;
+  company_id: number;
+}
