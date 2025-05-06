@@ -197,4 +197,19 @@ export class AccountController {
       return handleError(error);
     }
   }
+
+  @MessagePattern('change_password')
+  async changePassword(
+    @Payload() data: { id: string; newPassword: string },
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    try {
+      const response = await this.accountService.changePassword(
+        data.id,
+        data.newPassword,
+      );
+      return ApiResponse.success(response);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
 }

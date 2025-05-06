@@ -302,5 +302,34 @@ export class AccountService {
     }
   }
 
+  async changePassword(id: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    console.log('📥 Received password change request for ID:', id);
+    
+    const account = await this.accountModel.findById(id);
+    if (!account) {
+      throw new HttpException('Tài khoản không tồn tại', HttpStatus.NOT_FOUND);
+    }
+
+    try {
+      // Mã hoá mật khẩu
+      const hashedPassword = await argon2.hash(newPassword);
+      
+      // Cập nhật mật khẩu
+      account.password = hashedPassword;
+      await account.save();
+      
+      console.log('✅ Mật khẩu đã được thay đổi thành công:', id);
+      return {
+        success: true,
+        message: 'Mật khẩu đã được thay đổi thành công'
+      };
+    } catch (error) {
+      console.error('❌ Mật khẩu thay đổi thất bại:', error);
+      throw new HttpException(
+        'Lỗi hệ thống khi thay đổi mật khẩu',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 
 }
