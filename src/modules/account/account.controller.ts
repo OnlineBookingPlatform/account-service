@@ -198,14 +198,13 @@ export class AccountController {
     }
   }
 
-  @MessagePattern('change_password')
+  @MessagePattern('reset_default_password')
   async changePassword(
-    @Payload() data: { id: string; newPassword: string },
+    @Payload() data: { id: string; },
   ): Promise<ApiResponse<{ success: boolean; message: string }>> {
     try {
-      const response = await this.accountService.changePassword(
+      const response = await this.accountService.resetDefaultPassword(
         data.id,
-        data.newPassword,
       );
       return ApiResponse.success(response);
     } catch (error) {
