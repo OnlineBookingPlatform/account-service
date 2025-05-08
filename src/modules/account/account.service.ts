@@ -302,7 +302,7 @@ export class AccountService {
     }
   }
 
-  async changePassword(id: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+  async resetDefaultPassword(id: string): Promise<{ success: boolean; message: string }> {
     console.log('📥 Received password change request for ID:', id);
     
     const account = await this.accountModel.findById(id);
@@ -311,9 +311,11 @@ export class AccountService {
     }
 
     try {
+      const defaultPassword = process.env.DEFAULT_PASSWORD || '12345678';
+
       // Mã hoá mật khẩu
-      const hashedPassword = await argon2.hash(newPassword);
-      
+      const hashedPassword = await argon2.hash(defaultPassword);
+
       // Cập nhật mật khẩu
       account.password = hashedPassword;
       await account.save();
